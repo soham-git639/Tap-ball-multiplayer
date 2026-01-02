@@ -76,7 +76,8 @@
     let role = "spectator";
     let WIDTH = canvas.width, HEIGHT = canvas.height, LINE_HEIGHT = 10, BALL_RADIUS = 10;
     let ball = { x: WIDTH / 2, y: HEIGHT / 2 };
-
+    //let targetBall = {x:200,y:300};
+    //let currentBall = {x:200,y:300};
     // UI Handlers
     document.getElementById("setNameBtn").onclick = () => {
       const name = document.getElementById("playerName").value.trim();
@@ -91,6 +92,8 @@
       WIDTH = data.width; HEIGHT = data.height;
       LINE_HEIGHT = data.lineHeight; BALL_RADIUS = data.ballRadius;
       updateScores(data.names, data.scores);
+      ///////////*changes for smoothing the movement of the ball on the web////////////
+      //*targetBall = data.ball;
     });
 
     socket.on("players", (p) => updateScores(p.names, p.scores));
@@ -117,9 +120,11 @@
 
       ctx.fillStyle = "#00e0ff"; ctx.fillRect(0, 0, WIDTH, LINE_HEIGHT);
       ctx.fillStyle = "#ffb84d"; ctx.fillRect(0, HEIGHT - LINE_HEIGHT, WIDTH, LINE_HEIGHT);
-
+      //*currentBall.x += (targetBall.x - currentBall.x)*0.2;
+      //*currentBall.y += (targetBall.y - currentBall.y)*0.2;
       ctx.beginPath();
       ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
+      //*ctx.arc(currentBall.x,currentBall.y,BALL_RADIUS,0,Math.PI * 2);
       ctx.fillStyle = "white";
       ctx.fill();
 
@@ -136,3 +141,4 @@
   </script>
 </body>
 </html>
+
