@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tap Ball Multiplayer</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #101820, #0b1117);
+      font-family: 'Segoe UI', sans-serif;
+      color: #fff;
+      text-align: center;
+    }
+    h1 { margin: 10px; }
+    #gameCanvas {
+      border: 3px solid #fff;
+      border-radius: 10px;
+      background: #111;
+    }
+    #controls { margin-top: 10px; }
+    input {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: none;
+      margin-right: 5px;
+    }
+    button {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: none;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background: #0062cc; }
+    #scoreboard {
+      margin: 10px;
+      font-size: 18px;
+    }
+    #winner {
+      font-size: 22px;
+      color: gold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏐 Tap Ball Multiplayer</h1>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <div id="winner"></div>
+
+  <div id="controls">
+    <input id="playerName" placeholder="Enter your name">
+    <button id="setNameBtn">Join Game</button>
+    <button id="restartBtn">Restart</button>
+  </div>
+
+  <div id="scoreboard">
+    <div>🔵 <span id="topName">Top</span>: <span id="topScore">0</span></div>
+    <div>🟠 <span id="bottomName">Bottom</span>: <span id="bottomScore">0</span></div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const socket = io();
+
+    const winnerEl = document.getElementById("winner");
+    const topNameEl = document.getElementById("topName");
+    const bottomNameEl = document.getElementById("bottomName");
+    const topScoreEl = document.getElementById("topScore");
+    const bottomScoreEl = document.getElementById("bottomScore");
+
+    let role = "spectator";
+    let WIDTH = canvas.width, HEIGHT = canvas.height, LINE_HEIGHT = 10, BALL_RADIUS = 10;
+    let ball = { x: WIDTH / 2, y: HEIGHT / 2 };
+
+    // UI Handlers
+    document.getElementById("setNameBtn").onclick = () => {
+      const name = document.getElementById("playerName").value.trim();
+      if (name) socket.emit("setName", name);
+    };
+
+    document.getElementById("restartBtn").onclick = () => socket.emit("restart");
+
+    // Socket events
+    socket.on("welcome", (data) => {
+      role = data.role;
+      WIDTH = data.width; HEIGHT = data.height;
+      LINE_HEIGHT = data.lineHeight; BALL_RADIUS = data.ballRadius;
+      updateScores(data.names, data.scores);
+    });
+
+    socket.on("players", (p) => updateScores(p.names, p.scores));
+    socket.on("state", (data) => { ball = data.ball; });
+    socket.on("gameOver", (data) => {
+      updateScores(data.names, data.scores);
+      winnerEl.innerText = `${data.names[data.winner]} Wins! 🏆`;
+      setTimeout(() => winnerEl.innerText = "", 2000);
+    });
+
+    // Tapping area
+    canvas.addEventListener("click", () => {
+      if (role !== "spectator") socket.emit("tap");
+    });
+    canvas.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      if (role !== "spectator") socket.emit("tap");
+    }, {passive:false});
+
+    // Render loop
+    function draw() {
+      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+      ctx.fillStyle = "#111"; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      ctx.fillStyle = "#00e0ff"; ctx.fillRect(0, 0, WIDTH, LINE_HEIGHT);
+      ctx.fillStyle = "#ffb84d"; ctx.fillRect(0, HEIGHT - LINE_HEIGHT, WIDTH, LINE_HEIGHT);
+
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fillStyle = "white";
+      ctx.fill();
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    function updateScores(names, scores) {
+      topNameEl.innerText = names.top || "Top Player";
+      bottomNameEl.innerText = names.bottom || "Bottom Player";
+      topScoreEl.innerText = scores.top;
+      bottomScoreEl.innerText = scores.bottom;
+    }
+  </script>
+</body>
+</html>
